@@ -1,5 +1,6 @@
 package com.example.demo.entity;
 
+import com.example.demo.entity.type.AuthProviderType;
 import com.example.demo.entity.type.RoleType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -27,13 +28,13 @@ public class User implements UserDetails {
     private Long id;
 
     @JoinColumn(unique = true, nullable = false)
-    private String username;
+    private String username; // when we use oAuth then we can use here email or sometime providerId since it is unique. eg. google oAuth provide email , facebook doesn't but provide providerId
     private String password;
 
     private String providerId;
 
-//    @Enumerated(EnumType.STRING)
-//    private AuthProviderType providerType;
+    @Enumerated(EnumType.STRING)
+    private AuthProviderType providerType;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
