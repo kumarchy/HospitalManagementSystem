@@ -1,14 +1,16 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.AppointmentResponseDto;
 import com.example.demo.service.AppointmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import com.example.demo.entity.User;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/doctors")
@@ -16,11 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class DoctorController {
     private final AppointmentService appointmentService;
 
-@GetMapping("/appointments")
-    public ResponseEntity<?> getAllAppointmentsOfDoctor(Authentication authentication){
-    User user = (User)authentication.getPrincipal();
-    String username = user.getUsername();
-
-    return ResponseEntity.ok(appointmentService.getAllAppointmentsOfDoctor(username));
+    @GetMapping("/appointments")
+    public ResponseEntity<List<AppointmentResponseDto>> getAllAppointmentsOfDoctor(){
+        // after successful login in security context holder it is getting user as doctor
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return ResponseEntity.ok(appointmentService.getAllAppointmentsOfDoctor(user.getId()));
 }
 }

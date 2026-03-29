@@ -60,10 +60,9 @@ public class AppointmentService {
 
     }
 
-    public List<AppointmentResponseDto> getAllAppointmentsOfDoctor(String username){
+    public List<AppointmentResponseDto> getAllAppointmentsOfDoctor(Long doctorId){
 
-        Doctor doctor = doctorRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        Doctor doctor = doctorRepository.findById(doctorId).orElseThrow();
 
         return doctor.getAppointments()
                 .stream()

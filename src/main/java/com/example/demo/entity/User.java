@@ -5,12 +5,15 @@ import com.example.demo.entity.type.RoleType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 @Entity
 @Getter
 @Setter
@@ -18,9 +21,9 @@ import java.util.Set;
 @NoArgsConstructor
 @Builder
 @Table(name = "app_user"
-//        , indexes = {
-//        @Index(name = "idx_provider_id_provider_type", columnList = "providerId, providerType")
-//}
+        , indexes = {
+        @Index(name = "idx_provider_id_provider_type", columnList = "providerId, providerType")
+}
 )
 public class User implements UserDetails {
     @Id
@@ -36,12 +39,20 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private AuthProviderType providerType;
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.EAGER)  //elementCOlleciton is for creating separate table, and when we fetch user it will fetch roles of user too
+    @CollectionTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id")
+    )
     @Enumerated(EnumType.STRING)
     private Set<RoleType> roles = new HashSet<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROle_"+ role.name()))
+                .collect(Collectors.toSet());
+
+        // at the end in we consider user authority too while storing userPasswordAuthenticationToken in securityContextHolder
     }
 }

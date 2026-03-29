@@ -20,8 +20,7 @@ public class Doctor {
     private Long id;
 
     @OneToOne
-//    @MapsId
-    @JoinColumn(name = "user_id")
+    @MapsId
     private User user;
 
     @Column(nullable = false, length = 100)
@@ -30,7 +29,7 @@ public class Doctor {
     @Column(length = 100)
     private String specialization;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(unique = true, length = 100)
     private String email;
 
     @ManyToMany(mappedBy = "doctors")  //bidirectional mapping when we want to fetch data from reverse side too.

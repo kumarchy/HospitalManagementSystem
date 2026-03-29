@@ -18,10 +18,19 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
+//    private final AuthService authService;
+//    private final ObjectMapper objectMapper;
+
     private final AuthService authService;
     private final ObjectMapper objectMapper;
+
+    public OAuth2SuccessHandler(@Lazy AuthService authService, ObjectMapper objectMapper) {
+        this.authService = authService;
+        this.objectMapper = objectMapper;
+    }
+
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {

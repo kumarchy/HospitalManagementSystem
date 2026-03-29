@@ -2,9 +2,7 @@ package com.example.demo.entity;
 
 import com.example.demo.entity.type.BloodGroupType;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
@@ -26,6 +24,9 @@ import java.util.List;
                 @Index(name ="idx_patinent_birthdate", columnList = "birthDate")
         }
 )
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class  Patient {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,6 +42,10 @@ public class  Patient {
     private String email;
 
     private String gender;
+
+    @OneToOne
+    @MapsId    // now in this patient table there will be no more id field. there will be user_id in patient table which is equivalent to user table id
+    private User user;
 
     @CreationTimestamp // set date only at first creation or saving of data not at updation
     @Column(updatable = false)

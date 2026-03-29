@@ -2,13 +2,18 @@ package com.example.demo.security;
 
 import com.example.demo.dto.LoginRequestDto;
 import com.example.demo.dto.LoginResponseDto;
+import com.example.demo.dto.SignUpRequestDto;
 import com.example.demo.dto.SignupResponseDto;
+import com.example.demo.entity.Patient;
 import com.example.demo.entity.User;
 import com.example.demo.entity.type.AuthProviderType;
+import com.example.demo.entity.type.RoleType;
 import com.example.demo.repository.PatientRepository;
 import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.ResponseEntity;
+//import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,14 +23,18 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
     // login is managed by authenticationManager
+
     private final AuthenticationManager authenticationManager;
     private final AuthUtil authUtil;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PatientRepository patientRepository;
 
     public LoginResponseDto login(LoginRequestDto loginRequestDto) {
         Authentication authentication = authenticationManager.authenticate(
@@ -44,7 +53,7 @@ public class AuthService {
         return new LoginResponseDto(token, user.getId());
     }
 
-    public User signUpInternal(LoginRequestDto signupRequestDto, AuthProviderType authProviderType, String providerId)
+    public User signUpInternal(SignUpRequestDto signupRequestDto, AuthProviderType authProviderType, String providerId)
     {
         User user = userRepository.findByUsername(signupRequestDto.getUsername()).orElse(null);
 
@@ -54,17 +63,28 @@ public class AuthService {
                 .username(signupRequestDto.getUsername())
                 .providerId(providerId)
                 .providerType(authProviderType)
+//                .roles(Set.of(RoleType.PATIENT))  // At first default while sign up every user will be patient then later on admin will convert them to doctor selectively
+                .roles(signupRequestDto.getRoles())
                 .build();
 
         if (authProviderType == AuthProviderType.EMAIL){ // in case of login using email id , providerId will b null
             user.setPassword(passwordEncoder.encode(signupRequestDto.getPassword()));
         }
 
-        return  userRepository.save(user);
+        user = userRepository.save(user);
+
+        Patient patient = Patient.builder()
+                .name(signupRequestDto.getName())
+                .email(signupRequestDto.getUsername())
+                .user(user) // this will be same for patient too
+                .build();
+        patientRepository.save(patient);
+
+        return user;
     }
 
     // login controller
-    public SignupResponseDto signup(LoginRequestDto signupRequestDto) {
+    public SignupResponseDto signup(SignUpRequestDto signupRequestDto) {
         User user = signUpInternal(signupRequestDto, AuthProviderType.EMAIL, null);
         return new SignupResponseDto(user.getId(), user.getUsername());
     }
@@ -87,6 +107,7 @@ public class AuthService {
         // sometime it can be case like user may login using email id and password and oAuth too. so in this case we get email from Oauth and normal login
         // and if both email is same then we can know same user login but we need tho think that whether we should give them access or not. better we should not allow them, we can allow them to login through only auth provider
         String email = oAuth2User.getAttribute("email");
+        String name = oAuth2User.getAttribute("name");
 
         User emailUser = userRepository.findByUsername(email).orElse(null);
 
@@ -95,7 +116,8 @@ public class AuthService {
 
             // sometime for some provider we may not get the email, so to the unique things as username in this case
             String username = authUtil.determineUsernameFromOAuth2User(oAuth2User, registrationId, providerId);
-            user = signUpInternal(new LoginRequestDto(username, null), providerType, providerId);  // here above user is getting overridden
+            // while signup through email id we are asking for role but through oauth we are default providing patient role for user
+            user = signUpInternal(new SignUpRequestDto(username, null, name, Set.of(RoleType.PATIENT)), providerType, providerId);  // here above user is getting overridden
         }else if(user !=null){
             // suppose currently twitter is not providing email and in future if it provides means we need to store
             if (email !=null && !email.isBlank() && !email.equals(user.getUsername())){
